@@ -1,5 +1,5 @@
 # Telemedicine-over-Embedded-Cognitive-Radio-Networks-with-OFDM-PHY
-# 📡 Embedded Telemedicine using Cognitive Radio Networks with OFDM PHY
+# Embedded Telemedicine using Cognitive Radio Networks with OFDM PHY
 
 A secure, real-time embedded telemedicine framework leveraging Cognitive Radio Networks (CRNs) and Orthogonal Frequency Division Multiplexing (OFDM) PHY to provide remote healthcare access in bandwidth-constrained environments.
 
