@@ -2,9 +2,9 @@
 # 📡 Embedded Telemedicine using Cognitive Radio Networks with OFDM PHY
 
 A secure, real-time embedded telemedicine framework leveraging Cognitive Radio Networks (CRNs) and Orthogonal Frequency Division Multiplexing (OFDM) PHY to provide remote healthcare access in bandwidth-constrained environments.
-![System Architecture]("C:\Users\Anjali\OneDrive\Desktop\Major\Report\design_methodology.jpg")
 
-## 🧠 Project Overview
+
+## Project Overview
 
 In underserved and remote regions, access to real-time healthcare is limited by unreliable communication infrastructure and fixed-spectrum wireless systems. This project addresses these issues by:
 
@@ -13,7 +13,7 @@ In underserved and remote regions, access to real-time healthcare is limited by 
 - Using OFDM PHY for low-latency and robust data transmission
 - Supporting real-time patient monitoring and robotic assistance via Raspberry Pi GUI
 
-## 🚀 Key Features
+## Key Features
 
 - Real-time acquisition of ECG, SpO₂, and Temperature data
 - Adaptive wireless link selection using RSSI and SNR
@@ -22,7 +22,7 @@ In underserved and remote regions, access to real-time healthcare is limited by 
 - MQTT-based communication over Wi-Fi 6 with OFDM PHY
 - 22% power efficiency gain and 31% latency reduction vs. fixed-spectrum systems
 
-## 🔧 Hardware Used
+## Hardware Used
 
 - **ESP32-C6** – Cognitive radio node with Wi-Fi 6 support
 - **Raspberry Pi 4B** – Data aggregation, processing, GUI, and robotic control
@@ -32,7 +32,7 @@ In underserved and remote regions, access to real-time healthcare is limited by 
 - **ESP32-CAM** – For live video feed
 - **Servo Motors** – Robotic Arm actuation
 
-## 🖥️ Software Stack
+## Software Stack
 
 | Component             | Description                              |
 |----------------------|------------------------------------------|
@@ -43,7 +43,7 @@ In underserved and remote regions, access to real-time healthcare is limited by 
 | **MQTT**             | Lightweight publish/subscribe messaging  |
 | **MATLAB**           | Signal processing and validation         |
 
-## 🧪 Implementation Summary
+## Implementation Summary
 
 - ECG, SpO₂, and temperature values are captured, preprocessed, and sent over Wi-Fi 6.
 - Raspberry Pi selects the best ESP32-C6 link based on real-time MAC/PHY metrics.
@@ -51,7 +51,7 @@ In underserved and remote regions, access to real-time healthcare is limited by 
 - Tkinter-based GUI displays ECG waveform, sensor data, and robot controls.
 - Robotic arm actions (UP/DOWN/CW/CCW) are controlled remotely via MQTT.
 
-## 📊 Performance Highlights
+## Performance Highlights
 
 | Metric                   | Improvement |
 |--------------------------|-------------|
