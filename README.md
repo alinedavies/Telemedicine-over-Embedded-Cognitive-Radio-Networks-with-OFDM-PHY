@@ -15,6 +15,9 @@ In underserved and remote regions, access to real-time healthcare is limited by 
 
 ## Key Features
 
+![MPBLK](https://github.com/user-attachments/assets/3cc0e00d-2e54-4528-92ab-ffbec89543e7)
+
+
 - Real-time acquisition of ECG, SpO₂, and Temperature data
 - Adaptive wireless link selection using RSSI and SNR
 - Live video streaming via ESP32-CAM
