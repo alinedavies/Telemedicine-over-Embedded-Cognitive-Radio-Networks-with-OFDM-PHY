@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Disease Predictor</title>
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+</head>
+<body>
+  <h1>Disease Prediction</h1>
+  <form id="predictForm">
+    <label>Enter symptoms (comma separated):</label><br>
+    <input type="text" id="symptoms" size="60"><br><br>
+    <button type="submit">Predict</button>
+  </form>
+  <p id="result"></p>
+
+  <script>
+    $('#predictForm').submit(function(e) {
+      e.preventDefault();
+      $.post('/predict', { symptoms: $('#symptoms').val() }, function(data) {
+        $('#result').text(data.result);
+      });
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,162 @@
+import cv2
+import serial
+import numpy as np
+import paho.mqtt.client as mqtt
+import threading
+import time
+import re
+import base64
+from collections import deque
+
+# === CONFIG ===
+ESP_PORTS = {
+    "ESP1": "/dev/ttyACM0",
+    "ESP2": "/dev/ttyACM1"
+}
+ESP_BAUD = 115200
+ESP_TIMEOUT = 2
+ESP_DATA = {}
+
+BIOMED_PORT = "/dev/ttyUSB0"
+BIOMED_BAUD = 115200
+
+broker = "broker.hivemq.com"
+port = 1883
+biomed_topic = "/piA/to/piB"
+video_topic = "/video/frame"
+
+# === MQTT Setup ===
+client = mqtt.Client()
+client.connect(broker, port, 60)
+client.loop_start()
+
+# === Parse ESP Line ===
+def parse_esp_line(line):
+    try:
+        parts = line.split(',')
+        mac = parts[0].strip()
+        rssi = int(parts[1].split(':')[1].strip().split()[0])
+        snr = int(parts[2].split(':')[1].strip().split()[0])
+        ping = int(parts[3].split(':')[1].strip().split()[0])
+        mcs_str = parts[4].strip()
+        mcs_match = re.search(r'MCS(\d+)', mcs_str)
+        mcs = int(mcs_match.group(1)) if mcs_match else 0
+        rate = float(parts[5].split(':')[1].strip().split()[0])
+        return mac, rssi, snr, ping, mcs_str, rate, mcs
+    except Exception:
+        return ["--", -1000, -1000, 10000, "--", 0.0, 0]
+
+# === Score Function ===
+def score_data(rssi, snr, ping, rate, mcs):
+    return (
+        -rssi * 1.5 +
+        snr * 2 +
+        mcs * 5 +
+        rate * 1.2 -
+        ping * 1.0
+    )
+
+# === Best ESP ===
+def get_best_esp():
+    if len(ESP_DATA) < 1:
+        return "--", "--", "--", "--", "--", "--"
+
+    scores = {}
+    for name, data in ESP_DATA.items():
+        scores[name] = score_data(data["RSSI"], data["SNR"], data["Ping"], data["Rate"], data["MCS_num"])
+
+    best_name = max(scores, key=scores.get)
+    best_data = ESP_DATA[best_name]
+
+    return (
+        best_name,
+        best_data["MAC"],
+        f"{best_data['RSSI']}",
+        f"{best_data['Rate']:.1f}",
+        str(best_data["Ping"]),
+        best_data["MCS"]
+    )
+
+# === Thread to Read ESP1 & ESP2 ===
+def esp_thread(name, port):
+    try:
+        ser = serial.Serial(port, ESP_BAUD, timeout=ESP_TIMEOUT)
+        while True:
+            line = ser.readline().decode(errors='ignore').strip()
+            if line.startswith("Received:"):
+                line = line.replace("Received:", "").strip()
+
+            if line:
+                mac, rssi, snr, ping, mcs_str, rate, mcs_num = parse_esp_line(line)
+                ESP_DATA[name] = {
+                    "MAC": mac,
+                    "RSSI": rssi,
+                    "SNR": snr,
+                    "Ping": ping,
+                    "MCS": mcs_str,
+                    "Rate": rate,
+                    "MCS_num": mcs_num
+                }
+    except Exception as e:
+        print(f"[{name}] Serial error: {e}")
+
+# === Start ESP Threads ===
+for name, port in ESP_PORTS.items():
+    threading.Thread(target=esp_thread, args=(name, port), daemon=True).start()
+
+# === Camera Thread ===
+def camera_stream():
+    cap = cv2.VideoCapture(0)
+    cap.set(3, 320)
+    cap.set(4, 240)
+
+    while True:
+        ret, frame = cap.read()
+        if not ret:
+            continue
+
+        _, buffer = cv2.imencode('.jpg', frame, [int(cv2.IMWRITE_JPEG_QUALITY), 50])
+        jpg_as_text = base64.b64encode(buffer).decode('utf-8')
+        client.publish(video_topic, jpg_as_text)
+        time.sleep(0.1)
+
+threading.Thread(target=camera_stream, daemon=True).start()
+
+# === Biomed Serial Loop ===
+try:
+    biomed_ser = serial.Serial(BIOMED_PORT, BIOMED_BAUD, timeout=1)
+    print(f"[Pi A] Connected to ESP32 on {BIOMED_PORT}")
+except Exception as e:
+    print(f"[ERROR] Biomed serial port error: {e}")
+    exit()
+
+try:
+    while True:
+        line = biomed_ser.readline().decode().strip()
+        if not line or line.startswith("IR"):
+            continue
+
+        parts = line.split(",")
+        if len(parts) != 5:
+            continue
+
+        try:
+            ir = int(parts[0])
+            red = int(parts[1])
+            temp = float(parts[2])
+            hum = float(parts[3])
+            ecg = int(parts[4])
+        except ValueError:
+            continue
+
+        best_esp, mac, rssi, rate, ping, mcs = get_best_esp()
+        final_msg = f"{ir}, {red}, {temp:.1f}, {hum:.1f}, {ecg}, {best_esp}, {mac}, {rssi}, {rate}, {ping}, {mcs}"
+        print(final_msg)
+        client.publish(biomed_topic, final_msg)
+        time.sleep(0.04)
+
+except KeyboardInterrupt:
+    print("\n[Pi A] Stopped.")
+    client.loop_stop()
+    client.disconnect()
+    biomed_ser.close()
